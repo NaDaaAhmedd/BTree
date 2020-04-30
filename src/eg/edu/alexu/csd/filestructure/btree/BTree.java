@@ -1,4 +1,3 @@
-
 package eg.edu.alexu.csd.filestructure.btree;
 
 import javax.management.RuntimeErrorException;
@@ -55,19 +54,28 @@ public class BTree<K extends Comparable<K>,V> implements IBTree<K,V> {
 
     @Override
     public V search(K key) {
-        if (key == null) return null;
-        IBTreeNode<K,V> temp = root;
-        while (temp != null) {
-            for (int i = 0; i < temp.getKeys().size(); i++) {
-                if (temp.getKeys().get(i).compareTo(key) == 0) {
-                    return temp.getValues().get(i);
+       if( key == null || this.root == null ) return null ;
+       IBTreeNode<K,V> temp = this.root ;
+       while(true){
+           List<K> tempKeys = temp.getKeys();
+            if( key.compareTo(tempKeys.get(tempKeys.size()-1)) > 0 ){
+                if(temp.isLeaf())
+                    return null ;
+                temp = temp.getChildren().get(temp.getChildren().size()-1);
+            }
+            else{
+                for( int i = 0 ; i < tempKeys.size();i++ ){
+                    if(key.compareTo(tempKeys.get(i)) == 0 )
+                        return temp.getValues().get(i);
+                    else if (key.compareTo(tempKeys.get(i)) < 0 ){
+                        if(temp.isLeaf())
+                            return null ;
+                        temp = temp.getChildren().get(i);
+                        break;
+                    }
                 }
             }
-            if (!temp.isLeaf()) {
-                temp = temp.getChildren().get(getChildIndex(key, temp));
-            } else temp = null;
-        }
-        return null;
+       }
     }
 
     @Override
@@ -103,11 +111,11 @@ public class BTree<K extends Comparable<K>,V> implements IBTree<K,V> {
                 }
             }
         }
-        if(temp == this.root && temp.getKeys().size() == 1){
-            this.root = null ;
-            return true ;
-        }
         if(temp.isLeaf()){
+            if (temp == this.root && temp.getKeys().size() == 1){
+                this.root = null ;
+                return true ;
+            }
             temp.getKeys().remove(deletionIndex);
             temp.getValues().remove(deletionIndex);
             checkMin(temp);
@@ -123,13 +131,13 @@ public class BTree<K extends Comparable<K>,V> implements IBTree<K,V> {
                 temp.getKeys().set(deletionIndex , pree );
                 temp.getValues().set(deletionIndex , preeValue);
                 pre.getKeys().remove(pree);
-                pre.getValues().remove(preeValue);
+                pre.getValues().remove(pre.getValues().size()-1);
             }
             else if (  suc.getKeys().size() >= this.minDegree  ){
                 temp.getKeys().set(deletionIndex , succ );
                 temp.getValues().set(deletionIndex , succValue);
                 suc.getKeys().remove(succ);
-                suc.getValues().remove(succValue);
+                suc.getValues().remove(suc.getValues().size()-1);
             }
             else{
                 if(temp.getChildren().contains(suc)){
@@ -165,15 +173,6 @@ public class BTree<K extends Comparable<K>,V> implements IBTree<K,V> {
             }
         }
         return true ;
-    }
-
-    private int getChildIndex(Comparable key, IBTreeNode node) {
-        for (int i = 0; i < node.getKeys().size(); i++) {
-            if (((Comparable) node.getKeys().get(i)).compareTo(key) > 0) {
-                return i;
-            }
-        }
-        return node.getChildren().size() - 1;
     }
 
     private void checkMin (IBTreeNode<K,V> node){
